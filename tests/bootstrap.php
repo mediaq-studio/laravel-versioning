@@ -1,9 +1,8 @@
 <?php
 
 /**
- * Test bootstrap: uses the host application autoloader plus a small autoloader
- * for this package's own test namespace, so the package tests can run without
- * their own vendor directory.
+ * Test bootstrap: loads the package autoloader (own vendor/ first, then a host
+ * application) plus a small autoloader for this package's own test namespace.
  */
 
 $autoloaders = [
@@ -17,6 +16,9 @@ foreach ($autoloaders as $autoloader) {
         break;
     }
 }
+
+// Stubs for the laravel/framework helpers the console command uses.
+require __DIR__ . '/Support/helpers.php';
 
 spl_autoload_register(static function (string $class): void {
     $prefix = 'MediaQ\\Versioning\\Tests\\';

@@ -15,17 +15,6 @@ git work when you ask for it.
 
 ## Installation
 
-In a project that has this package in a `packages/` folder (like this repository), add it to
-`composer.json`:
-
-```json
-{
-    "repositories": [
-        { "type": "path", "url": "packages/laravel-versioning" }
-    ]
-}
-```
-
 ```bash
 composer require mediaq-studio/laravel-versioning --dev
 ```
@@ -35,10 +24,6 @@ The service provider is auto-discovered. Publish the config when you want to cha
 ```bash
 php artisan vendor:publish --tag=versioning-config
 ```
-
-> Working inside the host application without `composer require`? Map the namespace in the
-> `autoload.psr-4` section of the root `composer.json` and run `composer dump-autoload`:
-> `"MediaQ\\Versioning\\": "packages/laravel-versioning/src/"`.
 
 ## Usage
 
@@ -113,11 +98,12 @@ when the identifier changes or the pre-release is not in `identifier.number` for
 ## Tests
 
 ```bash
-vendor/bin/phpunit -c packages/laravel-versioning/phpunit.xml
+composer install
+vendor/bin/phpunit
 ```
 
-The bootstrap reuses the host application autoloader, so the package does not need its own
-`vendor/` directory.
+The console tests boot a minimal container and run the command against a throw-away repository with
+a local bare remote, so the commit/tag/push path is covered without a full Laravel application.
 
 ## Maintained by
 
