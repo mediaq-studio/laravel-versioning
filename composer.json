@@ -1,40 +1,41 @@
 {
-    "name": "mediaq-studio/laravel-versioning",
-    "description": "npm-version style semantic version bumping for Laravel applications, with composer.json as the single source of truth.",
-    "type": "library",
-    "license": "MIT",
-    "keywords": [
-        "laravel",
-        "versioning",
-        "semver",
-        "release"
-    ],
-    "require": {
-        "php": "^8.2",
-        "illuminate/console": "^11.0|^12.0",
-        "illuminate/support": "^11.0|^12.0",
-        "symfony/process": "^7.0"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^11.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "MediaQ\\Versioning\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "MediaQ\\Versioning\\Tests\\": "tests/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "MediaQ\\Versioning\\VersioningServiceProvider"
-            ]
-        }
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+  "name": "mediaq-studio/laravel-versioning",
+  "description": "npm-version style semantic version bumping for Laravel applications, with composer.json as the single source of truth.",
+  "type": "library",
+  "version": "1.0.0",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "versioning",
+    "semver",
+    "release"
+  ],
+  "require": {
+    "php": "^8.2",
+    "illuminate/console": "^11.0|^12.0",
+    "illuminate/support": "^11.0|^12.0",
+    "symfony/process": "^7.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "MediaQ\\Versioning\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "MediaQ\\Versioning\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "MediaQ\\Versioning\\VersioningServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }
