@@ -69,14 +69,39 @@ class GitRepositoryTest extends TestCase
         $this->assertSame('chore(release): 1.0.1', $this->git('log', '-1', '--pretty=%s'));
     }
 
+    public function test_it_keeps_the_commit_body_below_the_subject(): void
+    {
+        $git = $this->initialiseRepository();
+
+        file_put_contents($this->temporaryDirectory() . '/composer.json', "{\"version\": \"1.0.2\"}\n");
+
+        $git->add('composer.json');
+        $git->commit("chore(release): 1.0.2\n\nBump the version in composer.json to 1.0.2.");
+
+        $this->assertSame('chore(release): 1.0.2', $this->git('log', '-1', '--pretty=%s'));
+        $this->assertSame(
+            "chore(release): 1.0.2\n\nBump the version in composer.json to 1.0.2.",
+            $this->git('log', '-1', '--pretty=%B'),
+        );
+        $this->assertSame('Versioning Test', $this->git('log', '-1', '--pretty=%an'));
+    }
+
     public function test_it_throws_when_a_command_fails(): void
     {
         $git = $this->initialiseRepository();
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Command failed: git commit');
+        try {
+            $git->commit('nothing to commit');
+            $this->fail('Expected a RuntimeException.');
+        } catch (RuntimeException $exception) {
+            $message = $exception->getMessage();
 
-        $git->commit('nothing to commit');
+            // Arguments are quoted in the message, even though git is called without a shell.
+            $this->assertStringContainsString("Command failed: git commit -m 'nothing to commit'", $message);
+
+            // git reports a no-op commit on stdout, which used to be swallowed.
+            $this->assertStringContainsString('On branch', $message);
+        }
     }
 
     public function test_it_resolves_paths_relative_to_the_working_directory(): void

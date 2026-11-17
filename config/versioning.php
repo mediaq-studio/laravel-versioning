@@ -31,11 +31,13 @@ return [
     | Commit message
     |--------------------------------------------------------------------------
     |
-    | The ":version" placeholder is replaced with the new version.
+    | ":version" and ":previous" are replaced with the new and the current
+    | version. The first line becomes the commit subject, the paragraphs after a
+    | blank line become the commit body.
     |
     */
 
-    'commit_message' => 'chore(release): :version',
+    'commit_message' => "chore(release): :version\n\nBump the version in composer.json to :version.",
 
     /*
     |--------------------------------------------------------------------------
@@ -58,5 +60,19 @@ return [
     */
 
     'remote' => 'origin',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Interactive git
+    |--------------------------------------------------------------------------
+    |
+    | When disabled (the default) git cannot ask for a password, so a push to a
+    | repository that needs one fails immediately instead of hanging. Enable
+    | this when you release from an interactive terminal and rely on the prompt,
+    | or configure a credential helper / SSH key instead.
+    |
+    */
+
+    'interactive' => false,
 
 ];

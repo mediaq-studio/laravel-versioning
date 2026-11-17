@@ -44,7 +44,29 @@ class VersionCommandTest extends TestCase
         $this->assertContains('v1.0.1', $this->tagList($app->basePath()));
         $this->assertContains('v1.0.1', $this->tagList($remote));
         $this->assertSame('chore(release): 1.0.1', $this->git($app->basePath(), 'log', '-1', '--pretty=%s'));
+        $this->assertSame(
+            "chore(release): 1.0.1\n\nBump the version in composer.json to 1.0.1.",
+            $this->git($app->basePath(), 'log', '-1', '--pretty=%B'),
+        );
         $this->assertSame('chore(release): 1.0.1', $this->git($remote, 'log', '-1', '--pretty=%s'));
+    }
+
+    public function test_it_uses_the_configured_commit_message_template(): void
+    {
+        [$app] = $this->repositoryWithRemote();
+
+        $app->config->set(
+            'versioning.commit_message',
+            "chore(release): :version\n\nRelease :previous -> :version.",
+        );
+
+        [$exitCode, $output] = $this->runCommand($app, ['version' => 'minor', '--commit' => true]);
+
+        $this->assertSame(0, $exitCode, $output);
+        $this->assertSame(
+            "chore(release): 1.1.0\n\nRelease 1.0.0 -> 1.1.0.",
+            $this->git($app->basePath(), 'log', '-1', '--pretty=%B'),
+        );
     }
 
     public function test_it_only_tags_without_pushing(): void

@@ -31,7 +31,15 @@ final class GitRepository
         'GCM_INTERACTIVE' => 'never',
     ];
 
-    public function __construct(private readonly string $workingDirectory) {}
+    /**
+     * @param  bool  $interactive  Allow git to prompt for credentials. Off by default:
+     *                             a prompt cannot be answered in CI or queue workers, so
+     *                             the command would hang until the timeout kills it.
+     */
+    public function __construct(
+        private readonly string $workingDirectory,
+        private readonly bool $interactive = false,
+    ) {}
 
     public function workingDirectory(): string
     {
@@ -80,7 +88,17 @@ final class GitRepository
 
     public function commit(string $message): void
     {
-        $this->run(['git', 'commit', '-m', $message], self::RELEASE_TIMEOUT);
+        // The message is passed as an argument list (never through a shell), so no
+        // quoting is needed. Blank-line separated paragraphs become extra -m flags,
+        // which keeps the first line as the subject and the rest as the body.
+        $arguments = ['git', 'commit'];
+
+        foreach (preg_split("/\R{2,}/", trim($message)) ?: [$message] as $paragraph) {
+            $arguments[] = '-m';
+            $arguments[] = trim($paragraph);
+        }
+
+        $this->run($arguments, self::RELEASE_TIMEOUT);
     }
 
     public function tag(string $tag, string $message): void
@@ -137,12 +155,10 @@ final class GitRepository
         $process->run();
 
         if (! $process->isSuccessful()) {
-            $error = trim($process->getErrorOutput());
-
             throw new RuntimeException(sprintf(
                 'Command failed: git %s%s',
-                implode(' ', array_slice($command, 1)),
-                $error === '' ? '' : PHP_EOL . $error,
+                $this->describeCommand($command),
+                $this->describeFailure($process),
             ));
         }
 
@@ -150,11 +166,47 @@ final class GitRepository
     }
 
     /**
+     * Render the command arguments for an error message.
+     *
+     * This is purely cosmetic: the command itself is handed to the operating
+     * system as an argument list, so nothing has to be quoted at runtime. The
+     * arguments are quoted here only so the message is unambiguous to read.
+     *
+     * @param  array<int, string>  $command
+     */
+    private function describeCommand(array $command): string
+    {
+        return implode(' ', array_map(
+            static fn(string $argument): string => preg_match('/^[\w@%+=:,.\/-]+$/', $argument) === 1
+                ? $argument
+                : escapeshellarg($argument),
+            array_slice($command, 1),
+        ));
+    }
+
+    /**
+     * Collect the output of a failed command. git reports several failures (most
+     * pre-commit hooks, "nothing to commit") on stdout instead of stderr.
+     */
+    private function describeFailure(Process $process): string
+    {
+        $error = trim($process->getErrorOutput());
+        $details = $error !== '' ? $error : trim($process->getOutput());
+
+        return $details === '' ? '' : PHP_EOL . $details;
+    }
+
+    /**
      * @param  array<int, string>  $command
      */
     private function process(array $command, float $timeout): Process
     {
-        $process = new Process($command, $this->workingDirectory, self::NON_INTERACTIVE_ENV);
+        $process = new Process(
+            $command,
+            $this->workingDirectory,
+            $this->interactive ? null : self::NON_INTERACTIVE_ENV,
+        );
+
         $process->setTimeout($timeout);
 
         return $process;

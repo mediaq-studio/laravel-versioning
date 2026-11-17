@@ -50,7 +50,7 @@ php artisan version 2.1.5          # set an exact version
 | `--tag`         | Create an annotated tag `v<version>`, implies `--commit`                         |
 | `--push`        | Push the commit and the tag, implies `--commit` and `--tag`                      |
 | `--allow-dirty` | Allow committing while the working tree has other uncommitted changes            |
-| `--message=`    | Commit message, `:version` is replaced with the new version                      |
+| `--message=`    | Commit message template, `:version` and `:previous` are replaced                 |
 
 Git preflight: a dirty working tree or an already existing tag aborts the run before anything is
 written, unless `--allow-dirty` is passed.
@@ -87,13 +87,38 @@ when the identifier changes or the pre-release is not in `identifier.number` for
 
 ## Configuration
 
-| Key                     | Default                    |
-| ----------------------- | -------------------------- |
-| `composer_json`         | `composer.json`            |
-| `preid`                 | `beta`                     |
-| `commit_message`        | `chore(release): :version` |
-| `tag_prefix`            | `v`                        |
-| `remote`                | `origin`                   |
+| Key                     | Default                                 |
+| ----------------------- | --------------------------------------- |
+| `composer_json`         | `composer.json`                        |
+| `preid`                 | `beta`                                 |
+| `commit_message`        | `chore(release): :version` + body      |
+| `tag_prefix`            | `v`                                    |
+| `remote`                | `origin`                               |
+| `interactive`           | `false`                                |
+
+### Commit message
+
+`:version` and `:previous` are replaced with the new and the current version. The first line
+becomes the commit subject, the paragraphs after the first blank line become the body:
+
+```text
+chore(release): 1.0.1
+
+Bump the version in composer.json to 1.0.1.
+```
+
+Override it per run with `--message=`, for example
+`--message="chore(release): :version\n\nRelease :previous -> :version."`.
+
+### Pushing
+
+Git runs without a terminal, so it cannot ask for a password: pushing to a repository that demands
+one fails immediately with `fatal: Authentication failed for ...` instead of hanging. Make
+credentials available to the process (a credential helper, a cached personal access token, or an
+SSH key) or set `interactive` to `true` when you release from an interactive terminal.
+
+A failing git command reports the command with quoted arguments plus the output of git, including
+the stdout that pre-commit hooks write to.
 
 ## Tests
 

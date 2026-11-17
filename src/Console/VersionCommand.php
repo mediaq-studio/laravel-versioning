@@ -25,7 +25,7 @@ class VersionCommand extends Command
                             {--tag : Create an annotated git tag, implies --commit}
                             {--push : Push the commit and the tag, implies --commit}
                             {--allow-dirty : Allow committing with a dirty working tree}
-                            {--message= : Commit message, use :version as placeholder}';
+                            {--message= : Commit message, use :version and :previous as placeholders}';
 
     /**
      * The console command description.
@@ -40,6 +40,12 @@ class VersionCommand extends Command
      * @var array<int, string>
      */
     private const BUMP_TYPES = ['patch', 'minor', 'major', 'prepatch', 'preminor', 'premajor', 'prerelease'];
+
+    /**
+     * Fallback commit message: the first line is the subject, the paragraph after
+     * the blank line becomes the commit body.
+     */
+    private const DEFAULT_COMMIT_MESSAGE = "chore(release): :version\n\nBump the version in composer.json to :version.";
 
     public function handle(): int
     {
@@ -70,8 +76,11 @@ class VersionCommand extends Command
             $target->toString(),
         ));
 
-        $git = new GitRepository(dirname($versionFile->path()));
-        $commitMessage = $this->commitMessage($target);
+        $git = new GitRepository(
+            dirname($versionFile->path()),
+            (bool) config('versioning.interactive', false),
+        );
+        $commitMessage = $this->commitMessage($target, $current);
         $tagName = $this->tagPrefix() . $target->toString();
         $createTag = (bool) $this->option('tag') || (bool) $this->option('push');
         $push = (bool) $this->option('push');
@@ -183,7 +192,7 @@ class VersionCommand extends Command
         }
 
         $this->line(sprintf('Would run: git add -- %s', $stagedPath));
-        $this->line(sprintf('Would run: git commit -m "%s"', $commitMessage));
+        $this->line(sprintf('Would run: git commit %s', $this->describeCommit($commitMessage)));
 
         if ($createTag) {
             $this->line(sprintf('Would run: git tag -a %s -m "%s"', $tagName, $tagName));
@@ -263,15 +272,18 @@ class VersionCommand extends Command
         return (string) config('versioning.preid', 'beta');
     }
 
-    private function commitMessage(Version $version): string
+    private function commitMessage(Version $version, ?Version $current = null): string
     {
         $template = $this->option('message');
 
         if (! is_string($template) || $template === '') {
-            $template = (string) config('versioning.commit_message', 'chore(release): :version');
+            $template = (string) config('versioning.commit_message', self::DEFAULT_COMMIT_MESSAGE);
         }
 
-        return str_replace(':version', $version->toString(), $template);
+        return strtr($template, [
+            ':version' => $version->toString(),
+            ':previous' => $current?->toString() ?? '(none)',
+        ]);
     }
 
     private function tagPrefix(): string
@@ -282,5 +294,18 @@ class VersionCommand extends Command
     private function remote(): string
     {
         return (string) config('versioning.remote', 'origin');
+    }
+
+    /**
+     * Render the commit invocation for --dry-run, including body paragraphs.
+     */
+    private function describeCommit(string $message): string
+    {
+        $paragraphs = preg_split("/\R{2,}/", trim($message)) ?: [$message];
+
+        return implode(' ', array_map(
+            static fn(string $paragraph): string => '-m ' . escapeshellarg(trim($paragraph)),
+            $paragraphs,
+        ));
     }
 }
