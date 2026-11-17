@@ -6,7 +6,17 @@
  * their own vendor directory.
  */
 
-require __DIR__ . '/../../../vendor/autoload.php';
+$autoloaders = [
+    __DIR__ . '/../vendor/autoload.php',        // standalone checkout of this package
+    __DIR__ . '/../../../vendor/autoload.php',  // package installed inside a host application
+];
+
+foreach ($autoloaders as $autoloader) {
+    if (is_file($autoloader)) {
+        require $autoloader;
+        break;
+    }
+}
 
 spl_autoload_register(static function (string $class): void {
     $prefix = 'MediaQ\\Versioning\\Tests\\';

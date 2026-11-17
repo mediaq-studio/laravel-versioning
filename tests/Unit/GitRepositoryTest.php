@@ -30,6 +30,17 @@ class GitRepositoryTest extends TestCase
         $this->assertFalse($git->hasTag('v1.0.0'));
     }
 
+    public function test_it_reports_git_as_unavailable_for_a_missing_working_directory(): void
+    {
+        $git = new GitRepository($this->temporaryDirectory() . '/does-not-exist');
+
+        $this->assertFalse($git->isAvailable());
+        $this->assertFalse($git->isRepository());
+        $this->assertTrue($git->isClean());
+        $this->assertNull($git->currentBranch());
+        $this->assertFalse($git->hasTag('v1.0.0'));
+    }
+
     public function test_it_reports_a_clean_and_a_dirty_working_tree(): void
     {
         $git = $this->initialiseRepository();

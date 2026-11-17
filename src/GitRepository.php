@@ -10,6 +10,27 @@ use Symfony\Component\Process\Process;
  */
 final class GitRepository
 {
+    /**
+     * Timeout for read-only queries such as `git status` or `git tag --list`.
+     */
+    private const QUERY_TIMEOUT = 60.0;
+
+    /**
+     * Timeout for commands that can legitimately take longer: a push over a
+     * slow connection, or a commit/tag that runs hooks or GPG signing.
+     */
+    private const RELEASE_TIMEOUT = 900.0;
+
+    /**
+     * Environment that keeps git from waiting for interactive input. The child
+     * process has no usable stdin, so an unanswerable credential prompt would
+     * otherwise block until the timeout kills the command.
+     */
+    private const NON_INTERACTIVE_ENV = [
+        'GIT_TERMINAL_PROMPT' => '0',
+        'GCM_INTERACTIVE' => 'never',
+    ];
+
     public function __construct(private readonly string $workingDirectory) {}
 
     public function workingDirectory(): string
@@ -59,17 +80,17 @@ final class GitRepository
 
     public function commit(string $message): void
     {
-        $this->run(['git', 'commit', '-m', $message]);
+        $this->run(['git', 'commit', '-m', $message], self::RELEASE_TIMEOUT);
     }
 
     public function tag(string $tag, string $message): void
     {
-        $this->run(['git', 'tag', '-a', $tag, '-m', $message]);
+        $this->run(['git', 'tag', '-a', $tag, '-m', $message], self::RELEASE_TIMEOUT);
     }
 
     public function push(string $remote, string $ref): void
     {
-        $this->run(['git', 'push', $remote, $ref]);
+        $this->run(['git', 'push', $remote, $ref], self::RELEASE_TIMEOUT);
     }
 
     /**
@@ -89,14 +110,20 @@ final class GitRepository
     }
 
     /**
+     * Run a probe command. Process failures are reported as `false` instead of
+     * exceptions so the callers (`isAvailable()`, `isRepository()`) can be used
+     * as plain guards, even when git is missing or the working directory is
+     * unusable.
+     *
      * @param  array<int, string>  $command
      */
     private function succeeds(array $command): bool
     {
-        $process = new Process($command, $this->workingDirectory);
-        $process->run();
-
-        return $process->isSuccessful();
+        try {
+            return $this->process($command, self::QUERY_TIMEOUT)->run() === 0;
+        } catch (RuntimeException) {
+            return false;
+        }
     }
 
     /**
@@ -104,9 +131,9 @@ final class GitRepository
      *
      * @throws RuntimeException
      */
-    private function run(array $command): string
+    private function run(array $command, float $timeout = self::QUERY_TIMEOUT): string
     {
-        $process = new Process($command, $this->workingDirectory);
+        $process = $this->process($command, $timeout);
         $process->run();
 
         if (! $process->isSuccessful()) {
@@ -120,5 +147,16 @@ final class GitRepository
         }
 
         return $process->getOutput();
+    }
+
+    /**
+     * @param  array<int, string>  $command
+     */
+    private function process(array $command, float $timeout): Process
+    {
+        $process = new Process($command, $this->workingDirectory, self::NON_INTERACTIVE_ENV);
+        $process->setTimeout($timeout);
+
+        return $process;
     }
 }
