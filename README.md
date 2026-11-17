@@ -118,3 +118,7 @@ vendor/bin/phpunit -c packages/laravel-versioning/phpunit.xml
 
 The bootstrap reuses the host application autoloader, so the package does not need its own
 `vendor/` directory.
+
+## Maintained by
+
+This repository is maintained by [MediaQ Creative Digital Solutions](https://mediaq.nl).

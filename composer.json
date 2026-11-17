@@ -4,12 +4,23 @@
   "type": "library",
   "version": "1.0.0",
   "license": "MIT",
+  "homepage": "https://mediaq.nl",
+  "authors": [
+    {
+      "name": "MediaQ Creative Digital Solutions",
+      "homepage": "https://mediaq.nl"
+    }
+  ],
   "keywords": [
     "laravel",
     "versioning",
     "semver",
     "release"
   ],
+  "support": {
+    "issues": "https://github.com/mediaq-studio/laravel-versioning/issues",
+    "source": "https://github.com/mediaq-studio/laravel-versioning"
+  },
   "require": {
     "php": "^8.2",
     "illuminate/console": "^11.0|^12.0",
