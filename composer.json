@@ -2,7 +2,6 @@
   "name": "mediaq-studio/laravel-versioning",
   "description": "npm-version style semantic version bumping for Laravel applications, with composer.json as the single source of truth.",
   "type": "library",
-  "version": "1.0.1",
   "license": "MIT",
   "homepage": "https://mediaq.nl",
   "authors": [
